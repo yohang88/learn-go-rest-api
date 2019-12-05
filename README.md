@@ -39,3 +39,20 @@ curl -X POST \
 	"city": "Jakarta"
 }'
 ```
+
+### Update Employee
+```
+curl -X PUT \
+  http://localhost:8000/employees/1 \
+  -H 'Accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+	"name": "Name New",
+	"city": "City New"
+}'
+```
+
+### Delete Employee
+```
+curl -X DELETE http://localhost:8000/employees/1
+```
