@@ -24,6 +24,8 @@ func main() {
 	e.GET("/employees", getEmployees)
 	e.GET("/employees/:id", getEmployee)
 	e.POST("/employees", createEmployee)
+	e.PUT("/employees/:id", updateEmployee)
+	e.DELETE("/employees/:id", deleteEmployee)
 
 	e.Logger.Fatal(e.Start(":8000"))
 }
@@ -100,3 +102,51 @@ func createEmployee(c echo.Context) error {
 
 	return c.JSON(http.StatusCreated, employee)
 }
+
+
+func updateEmployee(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+
+	var employee Employee
+
+	db := connect()
+	defer db.Close()
+
+	row := db.QueryRow(`SELECT * FROM employees WHERE id = ?`, id)
+
+	err := row.Scan(&employee.Id, &employee.Name, &employee.City)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	input := new(Employee)
+	err = c.Bind(input)
+
+	employee.Name = input.Name
+	employee.City = input.City
+
+	_, err = db.Exec(`UPDATE employees SET name = ?, city = ? WHERE id = ?`, employee.Name, employee.City, id)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return c.JSON(http.StatusOK, employee)
+}
+
+func deleteEmployee(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+
+	db := connect()
+	defer db.Close()
+
+	_, err := db.Exec(`DELETE FROM employees WHERE id = ?`, id)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
