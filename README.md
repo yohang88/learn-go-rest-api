@@ -5,6 +5,7 @@
 - Basic REST API (List, View, Create, Update, Delete)
 - Database Connection
 - Basic Routing, Middleware, Handler, Logger
+- Basic Clean Architecture (Repository, Entity, Services)
 
 ## Setup
 1. Create DB, import `db/ddl.sql`

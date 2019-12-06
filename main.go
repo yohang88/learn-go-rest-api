@@ -2,6 +2,11 @@ package main
 
 import (
 	"database/sql"
+	"employees/entities"
+	_ "github.com/go-sql-driver/mysql"
+
+	repoMysql "employees/repositories/mysql"
+
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"log"
@@ -10,12 +15,6 @@ import (
 )
 
 var db *sql.DB
-
-type Employee struct {
-	Id   int	`json:"id"`
-	Name string	`json:"name"`
-	City string	`json:"city"`
-}
 
 func main() {
 	db = connect()
@@ -40,20 +39,9 @@ func main() {
 }
 
 func getEmployees(c echo.Context) error {
-	var employee Employee
-	var employees []Employee
+	employeeRepo := repoMysql.NewEmployeeRepositoryMysql(db)
 
-	rows, _ := db.Query(`SELECT * FROM employees`)
-
-	for rows.Next() {
-		err := rows.Scan(&employee.Id, &employee.Name, &employee.City)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		employees = append(employees, employee)
-	}
+	employees, _ := employeeRepo.FindAll()
 
 	return c.JSON(http.StatusOK, employees)
 }
@@ -61,44 +49,24 @@ func getEmployees(c echo.Context) error {
 func getEmployee(c echo.Context) error {
 	id, _ := strconv.Atoi(c.Param("id"))
 
-	var employee Employee
+	employeeRepo := repoMysql.NewEmployeeRepositoryMysql(db)
 
-	row := db.QueryRow(`SELECT * FROM employees WHERE id = ?`, id)
-
-	err := row.Scan(&employee.Id, &employee.Name, &employee.City)
+	employee, err := employeeRepo.Find(id)
 
 	if err != nil && err == sql.ErrNoRows {
 		return c.NoContent(http.StatusNotFound)
-	}
-
-	if err != nil {
-		log.Fatal(err)
 	}
 
 	return c.JSON(http.StatusOK, employee)
 }
 
 func createEmployee(c echo.Context) error {
-	input := new(Employee)
+	input := new(entities.Employee)
 	err := c.Bind(input)
 
-	res, err := db.Exec(`INSERT INTO employees (name, city) VALUES (?, ?)`, input.Name, input.City)
+	employeeRepo := repoMysql.NewEmployeeRepositoryMysql(db)
 
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	id, err := res.LastInsertId()
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var employee Employee
-
-	row := db.QueryRow(`SELECT * FROM employees WHERE id = ?`, id)
-
-	err = row.Scan(&employee.Id, &employee.Name, &employee.City)
+	employee, err := employeeRepo.Store(input)
 
 	if err != nil {
 		log.Fatal(err)
@@ -111,29 +79,12 @@ func createEmployee(c echo.Context) error {
 func updateEmployee(c echo.Context) error {
 	id, _ := strconv.Atoi(c.Param("id"))
 
-	var employee Employee
+	input := new(entities.Employee)
+	err := c.Bind(input)
 
-	// Check Existence
-	row := db.QueryRow(`SELECT * FROM employees WHERE id = ?`, id)
+	employeeRepo := repoMysql.NewEmployeeRepositoryMysql(db)
 
-	err := row.Scan(&employee.Id, &employee.Name, &employee.City)
-
-	if err != nil && err == sql.ErrNoRows {
-		return c.NoContent(http.StatusNotFound)
-	}
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Update if found
-	input := new(Employee)
-	err = c.Bind(input)
-
-	employee.Name = input.Name
-	employee.City = input.City
-
-	_, err = db.Exec(`UPDATE employees SET name = ?, city = ? WHERE id = ?`, employee.Name, employee.City, id)
+	employee, err := employeeRepo.Update(id, input)
 
 	if err != nil {
 		log.Fatal(err)
@@ -145,17 +96,9 @@ func updateEmployee(c echo.Context) error {
 func deleteEmployee(c echo.Context) error {
 	id, _ := strconv.Atoi(c.Param("id"))
 
-	// Check Existence
-	row := db.QueryRow(`SELECT * FROM employees WHERE id = ?`, id)
+	employeeRepo := repoMysql.NewEmployeeRepositoryMysql(db)
 
-	err := row.Scan()
-
-	if err != nil && err == sql.ErrNoRows {
-		return c.NoContent(http.StatusNotFound)
-	}
-
-	// Delete if found
-	_, err = db.Exec(`DELETE FROM employees WHERE id = ?`, id)
+	err := employeeRepo.Destroy(id)
 
 	if err != nil {
 		log.Fatal(err)
@@ -164,3 +107,13 @@ func deleteEmployee(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
+
+func connect() *sql.DB {
+	db, err := sql.Open("mysql", "root@tcp(127.0.0.1:3306)/go_dev")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return db
+}
