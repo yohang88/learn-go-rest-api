@@ -1,12 +1,15 @@
 package main
 
 import (
+	"database/sql"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"log"
 	"net/http"
 	"strconv"
 )
+
+var db *sql.DB
 
 type Employee struct {
 	Id   int	`json:"id"`
@@ -15,10 +18,16 @@ type Employee struct {
 }
 
 func main() {
+	db = connect()
+
 	e := echo.New()
 
 	// Middleware
 	e.Use(middleware.Logger())
+
+	e.GET("/", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{"version": "1.0.0"})
+	})
 
 	// Routes
 	e.GET("/employees", getEmployees)
@@ -33,9 +42,6 @@ func main() {
 func getEmployees(c echo.Context) error {
 	var employee Employee
 	var employees []Employee
-
-	db := connect()
-	defer db.Close()
 
 	rows, _ := db.Query(`SELECT * FROM employees`)
 
@@ -57,9 +63,6 @@ func getEmployee(c echo.Context) error {
 
 	var employee Employee
 
-	db := connect()
-	defer db.Close()
-
 	row := db.QueryRow(`SELECT * FROM employees WHERE id = ?`, id)
 
 	err := row.Scan(&employee.Id, &employee.Name, &employee.City)
@@ -74,9 +77,6 @@ func getEmployee(c echo.Context) error {
 func createEmployee(c echo.Context) error {
 	input := new(Employee)
 	err := c.Bind(input)
-
-	db := connect()
-	defer db.Close()
 
 	res, err := db.Exec(`INSERT INTO employees (name, city) VALUES (?, ?)`, input.Name, input.City)
 
@@ -109,9 +109,6 @@ func updateEmployee(c echo.Context) error {
 
 	var employee Employee
 
-	db := connect()
-	defer db.Close()
-
 	row := db.QueryRow(`SELECT * FROM employees WHERE id = ?`, id)
 
 	err := row.Scan(&employee.Id, &employee.Name, &employee.City)
@@ -137,9 +134,6 @@ func updateEmployee(c echo.Context) error {
 
 func deleteEmployee(c echo.Context) error {
 	id, _ := strconv.Atoi(c.Param("id"))
-
-	db := connect()
-	defer db.Close()
 
 	_, err := db.Exec(`DELETE FROM employees WHERE id = ?`, id)
 
