@@ -67,6 +67,10 @@ func getEmployee(c echo.Context) error {
 
 	err := row.Scan(&employee.Id, &employee.Name, &employee.City)
 
+	if err != nil && err == sql.ErrNoRows {
+		return c.NoContent(http.StatusNotFound)
+	}
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -109,14 +113,20 @@ func updateEmployee(c echo.Context) error {
 
 	var employee Employee
 
+	// Check Existence
 	row := db.QueryRow(`SELECT * FROM employees WHERE id = ?`, id)
 
 	err := row.Scan(&employee.Id, &employee.Name, &employee.City)
+
+	if err != nil && err == sql.ErrNoRows {
+		return c.NoContent(http.StatusNotFound)
+	}
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// Update if found
 	input := new(Employee)
 	err = c.Bind(input)
 
@@ -135,7 +145,17 @@ func updateEmployee(c echo.Context) error {
 func deleteEmployee(c echo.Context) error {
 	id, _ := strconv.Atoi(c.Param("id"))
 
-	_, err := db.Exec(`DELETE FROM employees WHERE id = ?`, id)
+	// Check Existence
+	row := db.QueryRow(`SELECT * FROM employees WHERE id = ?`, id)
+
+	err := row.Scan()
+
+	if err != nil && err == sql.ErrNoRows {
+		return c.NoContent(http.StatusNotFound)
+	}
+
+	// Delete if found
+	_, err = db.Exec(`DELETE FROM employees WHERE id = ?`, id)
 
 	if err != nil {
 		log.Fatal(err)
