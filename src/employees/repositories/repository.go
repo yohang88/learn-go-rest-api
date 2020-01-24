@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"employees/entities"
+	"github.com/yohang88/learn-go-rest-api/src/employees/entities"
 )
 
 type EmployeeRepository interface {

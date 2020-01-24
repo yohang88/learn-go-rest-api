@@ -2,8 +2,8 @@ package mysql
 
 import (
 	"database/sql"
-	"employees/entities"
-	"employees/repositories"
+	"github.com/yohang88/learn-go-rest-api/src/employees/entities"
+	"github.com/yohang88/learn-go-rest-api/src/employees/repositories"
 	"log"
 )
 

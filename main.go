@@ -2,10 +2,11 @@ package main
 
 import (
 	"database/sql"
-	"employees/entities"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/sirupsen/logrus"
+	"github.com/yohang88/learn-go-rest-api/src/employees/entities"
 
-	repoMysql "employees/repositories/mysql"
+	repoMysql "github.com/yohang88/learn-go-rest-api/src/employees/repositories/mysql"
 
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -16,6 +17,12 @@ import (
 
 var db *sql.DB
 
+var standardFields = logrus.Fields{
+	"hostname": "staging-1",
+	"appname":  "foo-app",
+	"session":  "1ce3f6v",
+}
+
 func main() {
 	db = connect()
 
@@ -23,6 +30,10 @@ func main() {
 
 	// Middleware
 	e.Use(middleware.Logger())
+
+	logrus.SetFormatter(&logrus.JSONFormatter{})
+
+	logrus.WithFields(standardFields).WithFields(logrus.Fields{"event_name": "APP_STARTUP"}).Info("Application started up.")
 
 	e.GET("/", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"version": "1.0.0"})
@@ -43,6 +54,8 @@ func getEmployees(c echo.Context) error {
 
 	employees, _ := employeeRepo.FindAll()
 
+	logrus.WithFields(standardFields).WithFields(logrus.Fields{"event_name": "EMPLOYEE_LIST"}).Info("List employees.")
+
 	return c.JSON(http.StatusOK, employees)
 }
 
@@ -56,6 +69,8 @@ func getEmployee(c echo.Context) error {
 	if err != nil && err == sql.ErrNoRows {
 		return c.NoContent(http.StatusNotFound)
 	}
+
+	logrus.WithFields(standardFields).WithFields(logrus.Fields{"event_name": "EMPLOYEE_SHOW"}).Info("Show employee.")
 
 	return c.JSON(http.StatusOK, employee)
 }
@@ -71,6 +86,8 @@ func createEmployee(c echo.Context) error {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	logrus.WithFields(standardFields).WithFields(logrus.Fields{"event_name": "EMPLOYEE_CREATE"}).Info("Create employee.")
 
 	return c.JSON(http.StatusCreated, employee)
 }
@@ -90,6 +107,8 @@ func updateEmployee(c echo.Context) error {
 		log.Fatal(err)
 	}
 
+	logrus.WithFields(standardFields).WithFields(logrus.Fields{"event_name": "EMPLOYEE_UPDATE"}).Info("Update employee.")
+
 	return c.JSON(http.StatusOK, employee)
 }
 
@@ -104,6 +123,8 @@ func deleteEmployee(c echo.Context) error {
 		log.Fatal(err)
 	}
 
+	logrus.WithFields(standardFields).WithFields(logrus.Fields{"event_name": "EMPLOYEE_DELETED"}).Info("Delete employee.")
+
 	return c.NoContent(http.StatusNoContent)
 }
 
@@ -114,6 +135,8 @@ func connect() *sql.DB {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	logrus.WithFields(standardFields).WithFields(logrus.Fields{"event_name": "DATABASE_CONNECTED"}).Info("Database connected.")
 
 	return db
 }
