@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"payrolls/entities"
+	"github.com/yohang88/learn-go-rest-api/src/payrolls/entities"
 )
 
 type PayrollRepository interface {
