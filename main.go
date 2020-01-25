@@ -12,6 +12,7 @@ import (
 	"github.com/labstack/echo/middleware"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 )
 
@@ -24,14 +25,15 @@ var standardFields = logrus.Fields{
 }
 
 func main() {
-	db = connect()
+	logrus.SetFormatter(&logrus.JSONFormatter{})
 
 	e := echo.New()
+	e.HideBanner = true
 
 	// Middleware
 	e.Use(middleware.Logger())
 
-	logrus.SetFormatter(&logrus.JSONFormatter{})
+	db = connect()
 
 	logrus.WithFields(standardFields).WithFields(logrus.Fields{"event_name": "APP_STARTUP"}).Info("Application started up.")
 
@@ -130,7 +132,12 @@ func deleteEmployee(c echo.Context) error {
 
 
 func connect() *sql.DB {
-	db, err := sql.Open("mysql", "root@tcp(127.0.0.1:3306)/go_dev")
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbName := os.Getenv("DB_NAME")
+	dbUser := os.Getenv("DB_USER")
+
+	db, err := sql.Open("mysql", dbUser+"@tcp("+dbHost+":"+dbPort+")/"+dbName)
 
 	if err != nil {
 		log.Fatal(err)
